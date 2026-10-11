@@ -1,0 +1,10 @@
+# 独立克隆的 lerobot 官方仓库（自带 .git，不纳入本仓库）
+lerobot/
+
+# Python 缓存
+__pycache__/
+*.pyc
+
+# 临时日志与诊断输出
+*.log
+*.txt
