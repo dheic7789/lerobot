@@ -152,7 +152,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--camera-id", type=int, default=0, help="摄像头编号（默认 0）")
     p.add_argument("--urdf", type=Path, default=DEFAULT_URDF, help="SO101 URDF 路径")
     p.add_argument("--gain", type=float, default=0.0004, help="像素→米增益（默认 0.0004 m/px）")
-    p.add_argument("--max-step", type=float, default=0.02, help="每步末端最大移动量，米（默认 0.02）")
+    p.add_argument("--max-step", type=float, default=0.005, help="每步末端最大移动量，米（默认 0.005，可调快如 0.02）")
+    p.add_argument("--run-time", type=int, default=600, help="SCS215 每次移动完成时间 ms（默认 600，越大越慢）")
     p.add_argument("--threshold", type=int, default=60, help="黑球灰度阈值（默认 60）")
     p.add_argument("--max-iter", type=int, default=None, help="最多自动移动步数（默认不限，直到对准）")
     p.add_argument("--max-reach", type=float, default=0.45, help="末端距基座原点的可达半径估算，米（默认 0.45）")
@@ -232,6 +233,10 @@ def main() -> None:
     # 5) 连接机械臂
     print(f"[setup] 连接机械臂 {args.port} ...")
     robot.connect()
+    # SCS215 用 Running_Time 限速（地址44，ms/步），避免目标一步跳到位
+    for m in motor_names:
+        robot.bus.write("Running_Time", m, args.run_time, normalize=False)
+    print(f"[setup] 已设每步运行时间 {args.run_time} ms")
     print("[setup] 连接成功，开始视觉闭环。按 q 退出，Ctrl+C 紧急停止。")
 
     sign_x = -1.0 if args.invert_x else 1.0
@@ -254,7 +259,7 @@ def main() -> None:
                 overlay = frame.copy()
                 cv2.putText(overlay, "no ball", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
                 cv2.imshow("vision", overlay)
-                if cv2.waitKey(1) & 0xFF == ord("q"):
+                if cv2.waitKey(1) & 0xFF in (ord("q"), 27):  # q 或 ESC 退出
                     break
                 continue
 
@@ -328,21 +333,31 @@ def main() -> None:
             if abs(dx_px) < args.align_px and abs(dy_px) < args.align_px:
                 cv2.putText(overlay, "ALIGNED", (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
             cv2.imshow("vision", overlay)
-            if cv2.waitKey(1) & 0xFF == ord("q"):
+            if cv2.waitKey(1) & 0xFF in (ord("q"), 27):  # q 或 ESC 退出
                 break
 
             if args.max_iter is not None and step_count >= args.max_iter:
                 print(f"[info] 已达最大步数 {args.max_iter}，停止")
                 break
 
-            time.sleep(0.05)  # ~20Hz 控制频率
+            time.sleep(0.15)  # ~6Hz 控制频率（已降速，可自行改小）
 
     except KeyboardInterrupt:
         print("\n[stop] 用户中断")
     finally:
         cv2.destroyAllWindows()
         cap.release()
-        robot.disconnect()
+        time.sleep(1.0)  # 等舵机完成当前运动，避免忙时禁力矩失败
+        try:
+            robot.disconnect()
+        except Exception as e:
+            # 退出时舵机偶发 Incorrect status packet，忽略；但必须保证串口真正关闭，否则下次连接舵机全丢
+            print(f"[warn] 断开时通信异常（已忽略）: {type(e).__name__}")
+            try:
+                robot.bus.port_handler.closePort()
+                print("[warn] 已强制关闭串口")
+            except Exception:
+                pass
         print("[done] 已断开机械臂")
 
 
@@ -371,7 +386,7 @@ def run_camera_only(args: argparse.Namespace) -> None:
         else:
             cv2.putText(frame, "no ball", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
         cv2.imshow("camera", frame)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
+        if cv2.waitKey(1) & 0xFF in (ord("q"), 27):  # q 或 ESC 退出
             break
     cap.release()
     cv2.destroyAllWindows()

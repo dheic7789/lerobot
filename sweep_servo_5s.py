@@ -2,8 +2,8 @@ import time
 import serial
 
 PORT = "COM3"
-SERVO_ID = 1
-DURATION = 5.0              # 持续运动 5 秒
+SERVO_ID = 4
+DURATION = 2.0              # 持续运动 5 秒
 P_MIN, P_MAX = 300, 700     # 扫动范围（位置值，可按需改）
 STEP = 20                   # 每次移动的步长
 DELAY = 0.02                # 每步间隔（秒）
