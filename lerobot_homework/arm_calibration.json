@@ -1,0 +1,38 @@
+{
+  "model": "scs215",
+  "resolution": 1024,
+  "endian": "big",
+  "joints": {
+    "shoulder_pan": {
+      "id": 1,
+      "min": 0,
+      "max": 732
+    },
+    "shoulder_lift": {
+      "id": 2,
+      "min": 271,
+      "max": 482
+    },
+    "elbow_flex": {
+      "id": 3,
+      "min": 39,
+      "max": 897
+    },
+    "wrist_flex": {
+      "id": 4,
+      "min": 156,
+      "max": 979
+    },
+    "wrist_roll": {
+      "id": 5,
+      "min": 41,
+      "max": 391
+    },
+    "gripper": {
+      "id": 6,
+      "min": 149,
+      "max": 960
+    }
+  },
+  "note": "0~1 归一化数值映射: raw = u*(max-min)+min, 0=min, 1=max"
+}
