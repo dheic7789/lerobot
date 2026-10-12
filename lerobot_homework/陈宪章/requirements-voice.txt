@@ -1,0 +1,16 @@
+# 语音控制（voice_control.py）的额外依赖，核心功能不需要装这些
+-r requirements.txt
+
+# 语音识别
+SpeechRecognition>=3.10
+PyAudio>=0.2.14
+
+# 本地识别模型（--stt whisper 时使用，首次运行会自动下载模型）
+faster-whisper>=1.0
+numpy>=1.26
+
+# 大模型解析指令（--llm 时使用，需要设置 API Key 环境变量）
+openai>=1.30
+
+# 可选：繁简转换
+# zhconv

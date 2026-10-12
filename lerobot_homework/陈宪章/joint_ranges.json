@@ -1,0 +1,26 @@
+{
+  "1": {
+    "min_step": 212,
+    "max_step": 793
+  },
+  "2": {
+    "min_step": 120,
+    "max_step": 748
+  },
+  "3": {
+    "min_step": 440,
+    "max_step": 995
+  },
+  "4": {
+    "min_step": 295,
+    "max_step": 802
+  },
+  "5": {
+    "min_step": 265,
+    "max_step": 860
+  },
+  "6": {
+    "min_step": 384,
+    "max_step": 789
+  }
+}

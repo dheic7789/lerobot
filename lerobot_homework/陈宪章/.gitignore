@@ -1,0 +1,33 @@
+# Python 虚拟环境和缓存
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# 密钥与本地配置
+.env
+*.key
+secrets*
+
+# 大文件：作业压缩包、演示视频、报告 PDF 不放进仓库
+*.zip
+*.mp4
+*.avi
+*.mov
+*.pdf
+
+# 程序运行产生的结果
+*.csv
+*.log
+out/
+output/
+*.png
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 仓库根目录的 .gitignore 忽略了所有 *.txt，这里把依赖清单放回来
+!requirements.txt
+!requirements-voice.txt

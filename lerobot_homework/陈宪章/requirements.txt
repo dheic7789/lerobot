@@ -1,0 +1,5 @@
+# 核心功能（六关节控制、逆运动学、总线扫描、校准、位置监视）只需要 pyserial
+pyserial>=3.5
+
+# 可选：运行 pid_tune.py / pid_curve.py 画 PID 曲线时需要，取消下面一行的注释
+# matplotlib>=3.8
