@@ -6,23 +6,26 @@
 
 ```
 lerobot_homework/
-├── vision_closed_loop.py        # 2.2 主程序：视觉闭环（vision / camera / check 三种模式）
-├── start_vision.bat             # 一键启动脚本（含 OMP 冲突修复环境变量）
-├── report_2_2_视觉闭环.md        # 2.2 作业报告
-├── scs215_arm.py                # 自研 SCS215 总线库（大端字节序：scan / set-id / calibrate / control）
-├── scs215_adapter.patch         # LeRobot 官方 Feetech 驱动适配 SCS215 的补丁（4 个源文件）
-├── make_lerobot_calib.py        # 自研校准 → LeRobot 校准文件转换
-├── burn_calib.py                # 校准烧写进舵机 EEPROM
-├── lerobot_bus_test.py          # 连接/读数测试
-├── lerobot_write_test.py        # 写位置测试
-├── lerobot_robot_test.py        # 机器人级连接/校准/观测测试
-├── cam_vs_com3_test.py          # 摄像头 vs 串口干扰诊断
-├── move_test.py                 # 真机连读连写连动测试
-├── save_home.py                 # 把当前舵机位姿保存为固定初始位
-├── home_position.json           # 固定初始位（可选；删除后以当前位姿为初始位）
-├── SO101/                       # 运动学 URDF（so101_kinematics.urdf 为 IK 实际使用版）
-├── arm_calibration.json         # 六关节原始编码校准范围
-└── 早期测试脚本                  # read_servo / write_servo / set_id / two_servo_control / sweep_servo_5s 等
+├── week1_2_servo_basics/       # 第 1-2 周：双舵机控制入门
+│   ├── read_servo.py / write_servo.py / set_id.py
+│   ├── two_servo_control.py / sweep_servo_5s.py
+│   └── 课程报告_双舵机控制.md
+├── week4_vision_closed_loop/   # 第 4 周：2.2 基于视觉的闭环控制
+│   ├── vision_closed_loop.py   # 视觉闭环主程序（平滑/三维追踪/方向自适应/容错）
+│   ├── report_2_2_视觉闭环.md   # 2.2 作业报告
+│   └── start_vision.bat        # 一键启动
+├── week6_visual_servoing/      # 第 6 周：Visual Servoing 课堂练习
+│   ├── camera_calibration.py   # 练习1：相机内参标定（棋盘格 15+ 张，误差~1.0）
+│   ├── handeye_calibration.py  # 练习2：手眼标定（12+ 姿态，误差<5cm）
+│   ├── servo_aruco.py          # 练习3：视觉伺服（ArUco 简单版，1cm 步进）
+│   ├── make_printables.py      # 生成棋盘格/ArUco 打印图
+│   └── printables/             # 打印图（棋盘格 9×6@25mm、ArUco 4x4_250）
+└── tools/                      # 通用工具与 SCS215 适配
+    ├── scs215_arm.py           # 自研 SCS215 总线库（大端）
+    ├── scs215_adapter.patch    # LeRobot 官方 Feetech 驱动适配补丁
+    ├── record_replay.py        # 示教记录 + 重放
+    ├── save_home.py / move_test.py / probe.py / ping_ids.py ...
+    └── SO101/                  # 运动学 URDF
 ```
 
 ## 硬件

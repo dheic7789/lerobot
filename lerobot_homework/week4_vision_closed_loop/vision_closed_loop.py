@@ -243,22 +243,20 @@ def main() -> None:
     for m in motor_names:
         robot.bus.write("Running_Time", m, args.run_time, normalize=False)
     print(f"[setup] 已设每步运行时间 {args.run_time} ms")
-    # 初始位：优先读 home_position.json（固定），否则用当前位姿
+    # 回归位：只用于退出时回到的姿势；启动不主动回位（怎么摆就从哪里开始）
     home_file = Path(__file__).resolve().parent / "home_position.json"
     if home_file.exists():
         home = json.loads(home_file.read_text(encoding="utf-8"))
         q_home = {f"{m}.pos": float(home[m]) for m in motor_names}
-        robot.send_action(q_home)
-        time.sleep(2.0)
-        print(f"[setup] 已回到固定初始位（{home_file.name}）")
+        print(f"[setup] 已加载退出回归位（{home_file.name}）")
     else:
         obs0 = robot.get_observation()
         q_home = {f"{m}.pos": float(obs0[f"{m}.pos"]) for m in motor_names}
-        print("[setup] 未找到 home_position.json，以当前位姿为初始位")
+        print("[setup] 未找到 home_position.json，以当前位姿为退出回归位")
     print("[setup] 连接成功，开始视觉闭环。按 q 退出，Ctrl+C 紧急停止。")
 
-    sign_x = -1.0 if args.invert_x else 1.0
-    sign_y = -1.0 if not args.invert_y else 1.0  # 默认 -1：相机随臂移动，上下镜像（实测）
+    sign_x = -1.0 if args.invert_x else 1.0   # 默认 +1（实测左右正确）；--invert-x 反转
+    sign_y = -1.0 if not args.invert_y else 1.0   # 默认 -1：相机随臂移动，上下镜像（实测）；--invert-y 反转
     step_count = 0
     prev_ball = None   # 上一帧球位置（低通平滑 + 丢帧保持用）
     last_seen = None
@@ -266,6 +264,7 @@ def main() -> None:
     ax_state = [None, 0]   # x 轴自适应：[上一步|dx|, 连续变差计数]
     ay_state = [None, 0]   # y 轴自适应：[上一步|dy|, 连续变差计数]
     ref_radius = None      # 首次检测到的球半径，作为"合适距离"参考（前后移动基准）
+    last_flip_time = 0.0   # 方向自适应冷却时间戳（翻转后 20 秒内不再翻）
 
     try:
         while True:
@@ -312,22 +311,25 @@ def main() -> None:
             dx_px = cx - w / 2.0   # >0 球偏右
             dy_px = cy - h / 2.0   # >0 球偏下
 
-            # 方向自适应：某轴连续 2 步偏差不降反升 → 该轴方向自动翻转（替代 --invert-*）
-            for ax_name, cur, state in (("x", abs(dx_px), ax_state), ("y", abs(dy_px), ay_state)):
-                prev, bad = state
-                if prev is not None and cur > prev + 3.0:
-                    bad += 1
-                else:
-                    bad = 0
-                if bad >= 2:
-                    if ax_name == "x":
-                        sign_x *= -1
+            # 方向自适应（兜底，防误翻）：连续 3 步偏差增大 >10px 且 >15% 才翻转，翻转后 20 秒冷却
+            now = time.time()
+            if now - last_flip_time > 20.0:
+                for ax_name, cur, state in (("x", abs(dx_px), ax_state), ("y", abs(dy_px), ay_state)):
+                    prev, bad = state
+                    if prev is not None and cur > prev + 10.0 and cur > prev * 1.15:
+                        bad += 1
                     else:
-                        sign_y *= -1
-                    print(f"[auto] {ax_name} 轴方向自动翻转")
-                    state[:] = [None, 0]
-                    continue
-                state[:] = [cur, bad]
+                        bad = 0
+                    if bad >= 3:
+                        if ax_name == "x":
+                            sign_x *= -1
+                        else:
+                            sign_y *= -1
+                        print(f"[auto] {ax_name} 轴方向自动翻转")
+                        state[:] = [None, 0]
+                        last_flip_time = now
+                        continue
+                    state[:] = [cur, bad]
 
             # 画面偏差 → 末端移动量（米）：偏右→±x，球变大(太近)→-y(后退)，球变小(太远)→+y(前进)，偏下→±z
             if ref_radius is None:
@@ -347,7 +349,12 @@ def main() -> None:
                 move = move / move_norm * args.max_step
 
             # 读取当前关节角（度）→ 正运动学得到当前末端位姿
-            obs = robot.get_observation()
+            try:
+                obs = robot.get_observation()
+            except Exception as e:
+                # 电压抖动等导致读位置失败：跳过本帧，下帧重试，不崩溃
+                print(f"[warn] 读位置失败（已跳过本帧）: {type(e).__name__}")
+                continue
             q_curr = np.array([float(obs[f"{m}.pos"]) for m in motor_names])
             T_curr = kin.forward_kinematics(q_curr)
 
@@ -369,16 +376,16 @@ def main() -> None:
                 "ee.gripper_pos": float(obs["gripper.pos"]),
             }
 
-            # 逆运动学：解算后把腕部（4/5/6）锁回当前值，只让肩肘（1/2/3）追踪移动
+            # 逆运动学：全关节 IK + 姿态硬约束（摄像头保持水平）；1号(shoulder_pan)锁定，左右不动
             T_des = np.eye(4, dtype=float)
             T_des[:3, :3] = Rotation.from_rotvec(
                 [ee_act["ee.wx"], ee_act["ee.wy"], ee_act["ee.wz"]]
             ).as_matrix()
             T_des[:3, 3] = [ee_act["ee.x"], ee_act["ee.y"], ee_act["ee.z"]]
-            q_target = kin.inverse_kinematics(q_curr, T_des, orientation_weight=0.01)
+            q_target = kin.inverse_kinematics(q_curr, T_des, orientation_weight=0.5)
             for i, m in enumerate(motor_names):
-                if m in ("wrist_flex", "wrist_roll", "gripper"):
-                    q_target[i] = q_curr[i]   # 456 锁回当前值，保持不动
+                if m == "shoulder_pan":
+                    q_target[i] = q_curr[i]   # 1号锁回当前值，左右方向不动
             joints_act = {f"{m}.pos": float(q_target[i]) for i, m in enumerate(motor_names)}
             joints_act = clip_joints_to_limits(joints_act, limits_deg)
 

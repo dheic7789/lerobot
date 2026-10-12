@@ -8,3 +8,8 @@ __pycache__/
 # 临时日志与诊断输出
 *.log
 *.txt
+
+# 同学参考代码（不入库）
+lerobot_homework/code-chen/
+# 调试截图
+lerobot_homework/cam_*.jpg
