@@ -39,6 +39,7 @@ opencv-python、numpy、scipy
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import time
 import xml.etree.ElementTree as ET
@@ -152,9 +153,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--camera-id", type=int, default=0, help="摄像头编号（默认 0）")
     p.add_argument("--urdf", type=Path, default=DEFAULT_URDF, help="SO101 URDF 路径")
     p.add_argument("--gain", type=float, default=0.0004, help="像素→米增益（默认 0.0004 m/px）")
-    p.add_argument("--max-step", type=float, default=0.005, help="每步末端最大移动量，米（默认 0.005，可调快如 0.02）")
+    p.add_argument("--gain-dr", type=float, default=0.0008, help="球半径像素→前后米增益（默认 0.0008 m/px，越大越猛）")
+    p.add_argument("--max-step", type=float, default=0.02, help="每步末端最大移动量，米（默认 0.02，可调慢如 0.005）")
     p.add_argument("--run-time", type=int, default=600, help="SCS215 每次移动完成时间 ms（默认 600，越大越慢）")
     p.add_argument("--threshold", type=int, default=60, help="黑球灰度阈值（默认 60）")
+    p.add_argument("--min-radius", type=int, default=25, help="黑球最小半径 px（过滤误检，默认 25）")
+    p.add_argument("--max-radius", type=int, default=250, help="黑球最大半径 px（过滤误检，默认 250）")
+    p.add_argument("--smooth", type=float, default=0.5, help="检测位置平滑系数 0~1（默认 0.5，越大越跟手、越小越稳）")
+    p.add_argument("--hold-ms", type=int, default=500, help="检测丢失后沿用旧位置的时长 ms（默认 500）")
     p.add_argument("--max-iter", type=int, default=None, help="最多自动移动步数（默认不限，直到对准）")
     p.add_argument("--max-reach", type=float, default=0.45, help="末端距基座原点的可达半径估算，米（默认 0.45）")
     p.add_argument("--align-px", type=float, default=15.0, help="判定已对准的像素偏差（默认 15 px）")
@@ -237,11 +243,29 @@ def main() -> None:
     for m in motor_names:
         robot.bus.write("Running_Time", m, args.run_time, normalize=False)
     print(f"[setup] 已设每步运行时间 {args.run_time} ms")
+    # 初始位：优先读 home_position.json（固定），否则用当前位姿
+    home_file = Path(__file__).resolve().parent / "home_position.json"
+    if home_file.exists():
+        home = json.loads(home_file.read_text(encoding="utf-8"))
+        q_home = {f"{m}.pos": float(home[m]) for m in motor_names}
+        robot.send_action(q_home)
+        time.sleep(2.0)
+        print(f"[setup] 已回到固定初始位（{home_file.name}）")
+    else:
+        obs0 = robot.get_observation()
+        q_home = {f"{m}.pos": float(obs0[f"{m}.pos"]) for m in motor_names}
+        print("[setup] 未找到 home_position.json，以当前位姿为初始位")
     print("[setup] 连接成功，开始视觉闭环。按 q 退出，Ctrl+C 紧急停止。")
 
     sign_x = -1.0 if args.invert_x else 1.0
-    sign_y = -1.0 if args.invert_y else 1.0
+    sign_y = -1.0 if not args.invert_y else 1.0  # 默认 -1：相机随臂移动，上下镜像（实测）
     step_count = 0
+    prev_ball = None   # 上一帧球位置（低通平滑 + 丢帧保持用）
+    last_seen = None
+    last_act = None    # 最后成功下发的目标关节角（丢球时回到它）
+    ax_state = [None, 0]   # x 轴自适应：[上一步|dx|, 连续变差计数]
+    ay_state = [None, 0]   # y 轴自适应：[上一步|dy|, 连续变差计数]
+    ref_radius = None      # 首次检测到的球半径，作为"合适距离"参考（前后移动基准）
 
     try:
         while True:
@@ -254,22 +278,68 @@ def main() -> None:
             h, w = frame.shape[:2]
             ball = detect_black_ball(frame, threshold=args.threshold)
 
+            # 半径合理性过滤：明显过大/过小的检测视为误检
+            if ball is not None and not (args.min_radius <= ball[2] <= args.max_radius):
+                ball = None
+
             if ball is None:
-                print("[info] 未检测到黑球，保持当前位置...")
+                # 球丢失：回到上一次检测到球时的目标位，然后停在原地等待
+                if last_act is not None:
+                    try:
+                        robot.send_action(last_act)
+                        print("[info] 球丢失，回到最后检测位置等待...")
+                    except Exception:
+                        pass
+                    last_act = None   # 只回一次，避免每帧重复下发
+                cx, cy, radius = prev_ball if prev_ball is not None else (w / 2, h / 2, 50)
                 overlay = frame.copy()
-                cv2.putText(overlay, "no ball", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+                cv2.circle(overlay, (int(cx), int(cy)), int(radius), (0, 200, 255), 2)
+                cv2.putText(overlay, "no ball", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 200, 255), 2)
                 cv2.imshow("vision", overlay)
-                if cv2.waitKey(1) & 0xFF in (ord("q"), 27):  # q 或 ESC 退出
+                if cv2.waitKey(1) & 0xFF in (ord("q"), 27):
                     break
                 continue
 
+            # 一阶低通平滑：消除检测位置每帧跳变
             cx, cy, radius = ball
+            if prev_ball is not None:
+                a = args.smooth
+                cx = a * cx + (1 - a) * prev_ball[0]
+                cy = a * cy + (1 - a) * prev_ball[1]
+                radius = a * radius + (1 - a) * prev_ball[2]
+            prev_ball = (cx, cy, radius)
+            last_seen = time.time()
             dx_px = cx - w / 2.0   # >0 球偏右
             dy_px = cy - h / 2.0   # >0 球偏下
 
-            # 画面偏差 → 末端移动量（米）：偏右→+x，偏上→+z；y 方向保持
+            # 方向自适应：某轴连续 2 步偏差不降反升 → 该轴方向自动翻转（替代 --invert-*）
+            for ax_name, cur, state in (("x", abs(dx_px), ax_state), ("y", abs(dy_px), ay_state)):
+                prev, bad = state
+                if prev is not None and cur > prev + 3.0:
+                    bad += 1
+                else:
+                    bad = 0
+                if bad >= 2:
+                    if ax_name == "x":
+                        sign_x *= -1
+                    else:
+                        sign_y *= -1
+                    print(f"[auto] {ax_name} 轴方向自动翻转")
+                    state[:] = [None, 0]
+                    continue
+                state[:] = [cur, bad]
+
+            # 画面偏差 → 末端移动量（米）：偏右→±x，球变大(太近)→-y(后退)，球变小(太远)→+y(前进)，偏下→±z
+            if ref_radius is None:
+                ref_radius = radius   # 以首次检测到的球大小为参考
+            dr_px = radius - ref_radius
             move = np.array(
-                [dx_px * args.gain * sign_x, 0.0, -dy_px * args.gain * sign_y], dtype=float
+                [
+                    dx_px * args.gain * sign_x,
+                    -dr_px * args.gain_dr,
+                    -dy_px * args.gain * sign_y,
+                ],
+                dtype=float,
             )
             # 单步限幅（配合 EEBoundsAndSafety 双保险）
             move_norm = float(np.linalg.norm(move))
@@ -299,19 +369,35 @@ def main() -> None:
                 "ee.gripper_pos": float(obs["gripper.pos"]),
             }
 
-            # 逆运动学：末端位姿 → 关节角 → 下发
-            joints_act = ee_to_joints((ee_act, obs))
+            # 逆运动学：解算后把腕部（4/5/6）锁回当前值，只让肩肘（1/2/3）追踪移动
+            T_des = np.eye(4, dtype=float)
+            T_des[:3, :3] = Rotation.from_rotvec(
+                [ee_act["ee.wx"], ee_act["ee.wy"], ee_act["ee.wz"]]
+            ).as_matrix()
+            T_des[:3, 3] = [ee_act["ee.x"], ee_act["ee.y"], ee_act["ee.z"]]
+            q_target = kin.inverse_kinematics(q_curr, T_des, orientation_weight=0.01)
+            for i, m in enumerate(motor_names):
+                if m in ("wrist_flex", "wrist_roll", "gripper"):
+                    q_target[i] = q_curr[i]   # 456 锁回当前值，保持不动
+            joints_act = {f"{m}.pos": float(q_target[i]) for i, m in enumerate(motor_names)}
             joints_act = clip_joints_to_limits(joints_act, limits_deg)
 
-            # IK 校验：正运动学回代，若与目标偏差大则判为 IK 无解
-            q_target = np.array([float(joints_act[f"{m}.pos"]) for m in motor_names])
-            T_sol = kin.forward_kinematics(q_target)
-            ik_err = float(np.linalg.norm(T_sol[:3, 3] - tgt_pos))
-            if ik_err > 0.03:
-                print(f"[warn] IK 无解（回代误差 {ik_err:.3f} m），本轮不下发，继续观察")
+            # IK 校验：单步关节角变化过大视为异常，跳过本步
+            dq = np.abs(q_target - q_curr)
+            if float(dq.max()) > 30.0:
+                print(f"[warn] IK 输出跳变过大（单步 {dq.max():.0f}°），本轮不下发，继续观察")
             else:
-                robot.send_action(joints_act)
-                step_count += 1
+                try:
+                    robot.send_action(joints_act)
+                    step_count += 1
+                    last_act = joints_act
+                    print(
+                        f"[move] step={step_count} | dx={dx_px:+.0f}px dy={dy_px:+.0f}px | "
+                        f"move=({move[0]*1000:+.0f},{move[1]*1000:+.0f},{move[2]*1000:+.0f})mm | dq={dq.max():.1f}°"
+                    )
+                except Exception as e:
+                    # 电压抖动导致读位置失败等偶发通信错误：跳过本步继续观察，不崩溃
+                    print(f"[warn] 下发失败（已跳过本步）: {type(e).__name__}")
 
             # 显示
             overlay = frame.copy()
@@ -347,6 +433,13 @@ def main() -> None:
     finally:
         cv2.destroyAllWindows()
         cap.release()
+        # 按 q / 中断后：回到启动位姿
+        try:
+            robot.send_action(q_home)
+            time.sleep(2.0)
+            print("[stop] 已回到启动位姿")
+        except Exception as e:
+            print(f"[warn] 回位失败（已忽略）: {type(e).__name__}")
         time.sleep(1.0)  # 等舵机完成当前运动，避免忙时禁力矩失败
         try:
             robot.disconnect()
