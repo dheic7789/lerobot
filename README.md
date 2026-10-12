@@ -91,3 +91,26 @@ LeRobot 官方 Feetech 驱动默认型号为 STS3215（型号 777），SO-ARM101
 | 每次启动回固定初始位 | `save_home.py` 固化当前位姿；删除 `home_position.json` 即"怎么摆就从哪里开始" |
 
 常用新参数：`--smooth`（平滑强度）、`--gain-dr`（前后灵敏度）、`--max-step`（每步末端移动量，默认 0.02m）。
+
+## 2026-10-12 更新：Week6 手眼标定
+
+`handeye_calibration.py` 完成课程任务 2（手眼标定），支持三种采集模式：
+
+| 模式 | 用法 | 说明 |
+|---|---|---|
+| **自动旋转（默认）** | `--camera-id 1` | 发送关节角自动旋转，**识别到棋盘格后只在附近 ±4° 小幅转动**（`--jitter` 可调），采集 14 个姿态 |
+| 手动 | `--manual` | 关力矩手掰机械臂 + 按空格记录 |
+| 重算 | `--recompute` | 从已存 `poses.json` + 照片重算，无需连机械臂（采集数据崩溃不丢） |
+
+关键改动：
+- **手写 Tsai-Lenz（AX=XB）**：OpenCV 5.0 移除了 `cv2.calibrateHandEye`，用 numpy + scipy 自实现旋转（skew(rA+rB)·r=rB−rA 最小二乘）与平移（(R_A−I)·t_X=R_X·t_B−t_A），输出 E_T_C
+- **启动探测带实时预览窗口**：摆好棋盘格自动识别规格（内参优先 → 7×5 → 9×6 → 6×4 → 10×7）
+- **降速防过载**：连接后写 `Running_Time`（`--run-time` 默认 800ms/步），慢速移动避免 USB 供电瞬时电流触发 Overload error
+- **读位置容错**：过载报错自动等待重试，不崩程序
+- 结果保存 `lerobot_homework/calib_data/handeye_result.json`（E_T_C + 回代误差，目标 <5cm）
+
+运行（棋盘格完整入镜后自动开始）：
+```powershell
+$env:KMP_DUPLICATE_LIB_OK="TRUE"
+python lerobot_homework\week6_visual_servoing\handeye_calibration.py --camera-id 1
+```

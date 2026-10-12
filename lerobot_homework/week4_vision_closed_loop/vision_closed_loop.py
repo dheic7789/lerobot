@@ -62,7 +62,7 @@ from lerobot.robots.so_follower.robot_kinematic_processor import (
 )
 from lerobot.model.kinematics import RobotKinematics
 
-DEFAULT_URDF = Path(r"D:\lerobot_workspace\lerobot_homework\SO101\so101_kinematics.urdf")
+DEFAULT_URDF = Path(r"D:\lerobot_workspace\lerobot_homework\tools\SO101\so101_kinematics.urdf")
 
 
 # ---------------------------------------------------------------------------

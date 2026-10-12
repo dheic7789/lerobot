@@ -24,7 +24,7 @@ from scipy.spatial.transform import Rotation
 from lerobot.model.kinematics import RobotKinematics
 from lerobot.robots.so_follower import SO101Follower, SO101FollowerConfig
 
-DEFAULT_URDF = Path("lerobot_homework/SO101/so101_kinematics.urdf")
+DEFAULT_URDF = Path("lerobot_homework/tools/SO101/so101_kinematics.urdf")
 STEP = 0.01  # 每步移动 1cm
 
 
