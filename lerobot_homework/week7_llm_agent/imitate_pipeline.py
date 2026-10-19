@@ -58,7 +58,9 @@ PROMPT_L1 = (
     "- 手臂水平向前/向侧伸出（伸直）→ shoulder_lift≈0，elbow_flex≈0（大臂水平！0 度不是 90 度）\n"
     "- 手臂竖直向上举起（举手/打招呼）→ shoulder_lift≈85~90\n"
     "- 手臂自然下垂 → shoulder_lift≈-70~-80\n"
-    "- 肘部弯曲、小臂折起 → elbow_flex≈30~90；手臂完全伸直 → elbow_flex≈0\n"
+    "- 肘部弯曲程度：完全伸直≈0，微屈≈25~40，明显弯曲（小臂折起）≈60~90\n"
+    "- 手掌向下按压/扶住物体（手腕下弯）→ wrist_flex≈-40~-70（显著负值，不是 -10 左右）\n"
+    "- 手掌朝上/托举 → wrist_flex≈+40~+70\n"
     "- 手掌张开/比耶/招手 → gripper≈70~90；握拳/握持 → gripper≈-5\n"
     "把照片中手臂相对**水平线**的抬起角度映射为 shoulder_lift：水平伸出=0°，举过头顶≈90°，自然下垂≈-75°。\n\n"
     "只输出 JSON（不要解释、不要 markdown），格式：\n"
@@ -75,6 +77,7 @@ PROMPT_L2 = PROMPT_L1 + (
     "- 手臂下垂自然放松：shoulder_lift≈-60~-80, elbow_flex≈10~30。\n"
     "- 叉腰：elbow_flex≈90, wrist_flex≈-20。\n"
     "- 指向远处（食指指向前方）：shoulder_lift≈10~30, elbow_flex≈10~20。\n"
+    "- 侧前方伸手并向下按压/扶住物体（手臂水平侧伸、肘微屈、手掌张开下压）：shoulder_lift≈5~15, elbow_flex≈30~45, wrist_flex≈-50~-70, gripper≈70~90。\n"
     "- 关节角度是连续的，请结合照片动作给出最接近的一组整数角度。"
 )
 
