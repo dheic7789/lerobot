@@ -38,16 +38,24 @@ SHOTS_DIR.mkdir(exist_ok=True)
 
 RAISE_HAND_JSON = BASE_DIR / "raise_hand_pose.json"   # 已保存的"举手"模板（真实舵机位置）
 RAISE_KEYWORDS = ("举手", "招手", "挥手", "打招呼", "raise", "wave")
+SIDE_RAISE_JSON = BASE_DIR / "side_raise_pose.json"   # 已保存的"侧平举"模板（真实舵机位置）
+SIDE_RAISE_KEYWORDS = ("侧平举", "水平伸直", "水平伸出", "侧伸手", "向侧面水平")
 
 
-def maybe_use_raise_template(description: str, joints: dict) -> dict:
-    """识别到'举手'类动作时，用已保存的真实模板关节值替换 VLM 输出。"""
-    if any(k in description.lower() for k in RAISE_KEYWORDS):
-        if RAISE_HAND_JSON.exists():
-            tpl = json.loads(RAISE_HAND_JSON.read_text(encoding="utf-8"))
-            print(f"[template] 识别到'举手'动作 → 套用已保存模板 {RAISE_HAND_JSON.name}（不用模型猜的关节值）")
-            return tpl
-        print("[template] 识别到'举手'，但未找到 raise_hand_pose.json，继续用 VLM 输出")
+def maybe_apply_template(description: str, joints: dict) -> dict:
+    """识别到已知动作时，用已保存的真实模板关节值替换 VLM 输出。"""
+    desc = description.lower()
+    for keywords, path, label in (
+        (RAISE_KEYWORDS, RAISE_HAND_JSON, "举手"),
+        (SIDE_RAISE_KEYWORDS, SIDE_RAISE_JSON, "侧平举"),
+    ):
+        if any(k in desc for k in keywords):
+            if path.exists():
+                tpl = json.loads(path.read_text(encoding="utf-8"))
+                print(f"[template] 识别到'{label}'动作 → 套用已保存模板 {path.name}（不用模型猜的关节值）")
+                return tpl
+            print(f"[template] 识别到'{label}'，但未找到 {path.name}，继续用 VLM 输出")
+            break
     return joints
 
 # 关节说明（注入 VLM prompt）
@@ -222,7 +230,7 @@ def main():
         joints = result.get("joints")
         if joints is None:
             sys.exit(f"[error] VLM 输出缺少 joints 字段: {result}")
-        joints = maybe_use_raise_template(result.get("description", ""), joints)  # 举手→真实模板
+        joints = maybe_apply_template(result.get("description", ""), joints)  # 举手/侧平举→真实模板
         print(f"[vlm] 动作描述: {result.get('description', '')}")
         print(f"[vlm] 关节参数: {json.dumps(joints, ensure_ascii=False)}")
     if args.step in ("all", "drive"):
