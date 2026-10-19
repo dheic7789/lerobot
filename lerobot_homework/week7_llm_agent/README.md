@@ -26,8 +26,10 @@ $env:ZHIPU_API_KEY = "你的key"
 # 方式二：硅基流动（免费模型 Qwen/Qwen3.5-4B）
 $env:SILICONFLOW_API_KEY = "你的key"
 
-# 方式三：任意 OpenAI 兼容
-$env:OPENAI_API_KEY = "你的key"; $env:OPENAI_BASE_URL = "https://..."
+# 方式三：DeepSeek（已实测支持图片输入，可同时用于 4.1 VLM 与 4.2 Agent）
+$env:OPENAI_API_KEY = "sk-你的key"
+$env:OPENAI_BASE_URL = "https://api.deepseek.com"
+$env:OPENAI_MODEL = "deepseek-chat"
 ```
 
 ## 运行
