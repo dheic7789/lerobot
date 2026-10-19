@@ -54,7 +54,14 @@ PROMPT_L1 = (
     "2) 把这个动作转换为一组机械臂 6 关节控制参数（单位：度，整数）。\n"
     "机械臂每个关节的名称、含义、活动范围如下：\n"
     + "\n".join(f"- {name}: {desc}" for name, desc in JOINT_RANGES.items()) +
-    "\n\n只输出 JSON（不要解释、不要 markdown），格式：\n"
+    "\n\n动作→关节角度的关键映射（务必严格遵守，这是最常见的错误来源）：\n"
+    "- 手臂水平向前/向侧伸出（伸直）→ shoulder_lift≈0，elbow_flex≈0（大臂水平！0 度不是 90 度）\n"
+    "- 手臂竖直向上举起（举手/打招呼）→ shoulder_lift≈85~90\n"
+    "- 手臂自然下垂 → shoulder_lift≈-70~-80\n"
+    "- 肘部弯曲、小臂折起 → elbow_flex≈30~90；手臂完全伸直 → elbow_flex≈0\n"
+    "- 手掌张开/比耶/招手 → gripper≈70~90；握拳/握持 → gripper≈-5\n"
+    "把照片中手臂相对**水平线**的抬起角度映射为 shoulder_lift：水平伸出=0°，举过头顶≈90°，自然下垂≈-75°。\n\n"
+    "只输出 JSON（不要解释、不要 markdown），格式：\n"
     '{"description": "动作描述", "joints": {"shoulder_pan": 0, "shoulder_lift": 30, '
     '"elbow_flex": 40, "wrist_flex": 0, "wrist_roll": 0, "gripper": 50}}\n'
     "所有关节值必须在上述范围内，尽量选择能表达照片动作的合理姿态；gripper 默认 50（半开）。"
