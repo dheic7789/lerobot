@@ -80,7 +80,12 @@ class ArmController:
     def _connect(self):
         from lerobot.robots.so_follower import SO101Follower, SO101FollowerConfig
         from lerobot.model.kinematics import RobotKinematics
-        cfg = SO101FollowerConfig(port=self.port, id="my_awesome_follower_arm", use_degrees=True)
+        cfg = SO101FollowerConfig(
+            port=self.port,
+            id="my_awesome_follower_arm",
+            use_degrees=True,
+            disable_torque_on_disconnect=False,  # 断开时保持扭矩：动作完成后机械臂停在原位，不塌
+        )
         robot = SO101Follower(cfg)
         try:
             robot.connect()
