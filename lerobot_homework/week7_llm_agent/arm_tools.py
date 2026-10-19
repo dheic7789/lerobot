@@ -82,7 +82,16 @@ class ArmController:
         from lerobot.model.kinematics import RobotKinematics
         cfg = SO101FollowerConfig(port=self.port, id="my_awesome_follower_arm", use_degrees=True)
         robot = SO101Follower(cfg)
-        robot.connect()
+        try:
+            robot.connect()
+        except Exception as e:
+            raise SystemExit(
+                f"[error] 机械臂连接失败: {type(e).__name__}: {str(e)[:200]}\n"
+                f"        常见原因与排查：\n"
+                f"        1) 外接电源未开/未接：USB 5V 带 6 个舵机会欠压（报 Input voltage error）→ 确认机械臂电源已开启\n"
+                f"        2) 总线插头松动（报错舵机附近的线接触不良）→ 重新插紧，尤其报错舵机前后段\n"
+                f"        3) 先跑 python lerobot_homework\\tools\\ping_ids.py 逐个确认 ID1-6 是否在线，再重试"
+            )
         # SCS215 降速（地址44，ms/步），避免瞬时电流过大触发过载保护
         for m in robot.bus.motors:
             robot.bus.write("Running_Time", m, self.run_time, normalize=False)
