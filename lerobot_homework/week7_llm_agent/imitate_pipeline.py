@@ -9,7 +9,7 @@
 
 用法：
   # 全流程（真机）
-  python imitate_pipeline.py --provider zhipu --camera-id 1
+  python imitate_pipeline.py --provider zhipu --camera-id 0
   # dry-run（不连机械臂，验证 API + 流程）
   python imitate_pipeline.py --dry-run --provider siliconflow
   # 分步：只拍照 / 只解析 / 只驱动
@@ -95,7 +95,7 @@ def make_client():
 
 
 def step_capture(camera_id: int) -> Path:
-    """任务一：拍照保存（不 imshow）。"""
+    """任务一：拍照保存（不 imshow）。提示用户摆好姿势，按回车后 3 秒倒计时拍摄。"""
     cap = cv2.VideoCapture(camera_id)
     if not cap.isOpened():
         sys.exit(f"[error] 无法打开摄像头 #{camera_id}（确认相机已连接）")
@@ -104,13 +104,21 @@ def step_capture(camera_id: int) -> Path:
     # 等 10 帧让自动曝光稳定
     for _ in range(10):
         cap.read()
+    try:
+        input(">>> 请摆好动作，按回车后 3 秒拍照（Ctrl+C 可取消）")
+    except KeyboardInterrupt:
+        cap.release()
+        sys.exit("\n已取消拍照。")
+    for i in (3, 2, 1):
+        print(f"    {i}...")
+        time.sleep(1)
     ok, frame = cap.read()
     cap.release()
     if not ok:
         sys.exit("[error] 读取摄像头失败")
     path = SHOTS_DIR / f"arm_{time.strftime('%H%M%S')}.jpg"
     cv2.imwrite(str(path), frame)
-    print(f"[capture] 已保存照片: {path}")
+    print(f"[capture] 已拍照: {path}")
     return path
 
 
