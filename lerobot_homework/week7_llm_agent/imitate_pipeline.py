@@ -45,24 +45,20 @@ SIDE_RAISE_KEYWORDS = ("侧平举", "水平伸直", "水平伸出", "侧伸手",
 def maybe_apply_template(description: str, joints: dict) -> dict:
     """识别到已知动作时，用已保存的真实模板关节值替换 VLM 输出。"""
     desc = description.lower()
-    for keywords, path, label in (
-        (RAISE_KEYWORDS, RAISE_HAND_JSON, "举手"),
-        (SIDE_RAISE_KEYWORDS, SIDE_RAISE_JSON, "侧平举"),
+    for keywords, path in (
+        (RAISE_KEYWORDS, RAISE_HAND_JSON),
+        (SIDE_RAISE_KEYWORDS, SIDE_RAISE_JSON),
     ):
-        if any(k in desc for k in keywords):
-            if path.exists():
-                tpl = json.loads(path.read_text(encoding="utf-8"))
-                print(f"[template] 识别到'{label}'动作 → 套用已保存模板 {path.name}（不用模型猜的关节值）")
-                return tpl
-            print(f"[template] 识别到'{label}'，但未找到 {path.name}，继续用 VLM 输出")
-            break
+        if any(k in desc for k in keywords) and path.exists():
+            tpl = json.loads(path.read_text(encoding="utf-8"))
+            return tpl
     return joints
 
 # 关节说明（注入 VLM prompt）
 JOINT_NAMES = ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper"]
 JOINT_RANGES = {
     "shoulder_pan": "[-110, 110] 度：肩部左右旋转，负=右转，正=左转",
-    "shoulder_lift": "[-100, 100] 度：肩部抬升，负=手臂下垂，正=手臂抬起",
+    "shoulder_lift": "[-120, 120] 度：肩部抬升，负=手臂下垂，正=手臂抬起",
     "elbow_flex": "[-97, 97] 度：肘部弯曲，负=伸直，正=弯曲",
     "wrist_flex": "[-95, 95] 度：腕部俯仰，负=向下，正=向上",
     "wrist_roll": "[-157, 163] 度：腕部旋转，负=逆时针，正=顺时针",
