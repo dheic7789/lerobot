@@ -40,6 +40,8 @@ def make_client():
     key = os.environ.get("ZHIPU_API_KEY") or os.environ.get("SILICONFLOW_API_KEY") or os.environ.get("OPENAI_API_KEY")
     if not key:
         sys.exit("[error] 未找到 API Key：请设置 ZHIPU_API_KEY / SILICONFLOW_API_KEY / OPENAI_API_KEY")
+    if "你的" in key or "xxxx" in key or any(ord(c) > 127 for c in key):
+        sys.exit("[error] API Key 无效：包含中文或占位符（如'你的key'）。请填入从平台复制的真实 key。")
     if os.environ.get("ZHIPU_API_KEY"):
         base = os.environ.get("ZHIPU_BASE_URL", "https://open.bigmodel.cn/api/paas/v4/")
         model = os.environ.get("ZHIPU_MODEL", "glm-4.6v-flash")
