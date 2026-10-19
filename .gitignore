@@ -17,3 +17,4 @@ lerobot_homework/cam_*.jpg
 # 标定照片（体积大，仅入库结果 json，照片留本地）
 lerobot_homework/calib_data/images/
 lerobot_homework/calib_data/handeye_images/
+lerobot_homework/week7_llm_agent/shots/
