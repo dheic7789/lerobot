@@ -88,15 +88,20 @@ PROMPT_L1 = (
 )
 
 PROMPT_L2 = PROMPT_L1 + (
-    "\n\n补充说明（帮助你更准确模仿）：\n"
-    "- 机械臂竖直向上伸直时：shoulder_lift≈90, elbow_flex≈0。\n"
-    "- 手臂水平前伸时：shoulder_lift≈0, elbow_flex≈0。\n"
-    "- 举手打招呼（类似照片中挥手的动作）：shoulder_lift≈70~90, elbow_flex≈30~60。\n"
-    "- 手臂下垂自然放松：shoulder_lift≈-60~-80, elbow_flex≈10~30。\n"
-    "- 叉腰：elbow_flex≈90, wrist_flex≈-20。\n"
-    "- 指向远处（食指指向前方）：shoulder_lift≈10~30, elbow_flex≈10~20。\n"
-    "- 侧前方伸手并向下按压/扶住物体（手臂水平侧伸、肘微屈、手掌张开下压）：shoulder_lift≈5~15, elbow_flex≈30~45, wrist_flex≈-50~-70, gripper≈70~90。\n"
-    "- 关节角度是连续的，请结合照片动作给出最接近的一组整数角度。"
+    "\n\n【机械臂构造】（帮助你理解每个自由度对应的人体动作）：\n"
+    "- 这是一台 6 自由度机械臂：肩部 2 个自由度（shoulder_pan=肩部左右旋转/转肩，shoulder_lift=肩部上下抬升/抬臂），"
+    "肘部 1 个（elbow_flex=弯肘），腕部 2 个（wrist_flex=手腕俯仰/压腕或抬手背，wrist_roll=手腕旋转），末端夹爪 1 个（gripper=五指张开/握拳）。\n"
+    "- 类比人体：抬大臂→shoulder_lift；小臂弯起→elbow_flex；手掌下压→wrist_flex 负值；手掌朝上→wrist_flex 正值；五指张开→gripper 大；握拳→gripper 负。\n\n"
+    "【完整动作示例】（遇到类似动作请直接参考这些准确参数，这是经过真机校准的值）：\n"
+    "- 举手/挥手/打招呼：shoulder_pan≈31, shoulder_lift≈-100, elbow_flex≈71, wrist_flex≈-3, wrist_roll≈2, gripper≈35\n"
+    "- 侧平举/手臂水平伸直：shoulder_pan≈23, shoulder_lift≈-100, elbow_flex≈6, wrist_flex≈-13, wrist_roll≈2, gripper≈35\n"
+    "- 叉腰：shoulder_lift≈-40, elbow_flex≈90, wrist_flex≈-20, gripper≈50\n"
+    "- 指点远处：shoulder_lift≈20, elbow_flex≈15, wrist_flex≈0, wrist_roll≈0, gripper≈30\n"
+    "- 比耶/手掌完全张开：gripper≈80~90, wrist_flex≈0\n"
+    "- 握拳/握持：gripper≈-5\n"
+    "- 侧前伸手掌下压扶物：shoulder_lift≈5~15, elbow_flex≈30~45, wrist_flex≈-50~-70, gripper≈70~90\n\n"
+    "【判断原则】先判断照片里手臂的**整体朝向**（抬/平/垂）和**手部状态**（张/握/压/朝上），"
+    "再逐关节映射；关节角度是连续的，给出最接近照片动作的一组整数角度。"
 )
 
 

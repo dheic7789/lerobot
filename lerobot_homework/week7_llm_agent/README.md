@@ -13,9 +13,12 @@
 |---|---|
 | `arm_tools.py` | 机械臂工具层（7 个工具：get_robot_state / move_to_joints / move_to_pose / detect_object / start_tracking / stop_tracking / capture_frame）+ OpenAI tools schema |
 | `imitate_pipeline.py` | 4.1 pipeline：拍照 → VLM → 关节 → 机械臂（任务一~四） |
+| `sequence_pipeline.py` | 4.1 任务五：文本命令 → 机械臂连贯动作（DeepSeek 文本模型解析 + 动作库逐帧执行） |
 | `llm_agent.py` | 4.2 LLM Agent：ReAct loop + function calling |
 | `skill_arm_tracking.md` | 选做：追踪 Skill 操作指南 |
-| `shots/` | 拍照保存目录 |
+| `raise_hand_pose.json` | 真机校准的"举手"模板（VLM 识别到举手/招手/挥手时套用） |
+| `side_raise_pose.json` | 真机校准的"侧平举"模板（识别到侧平举/水平伸直时套用） |
+| `shots/` | 拍照保存目录（不入 git） |
 
 ## 环境变量（API Key，勿写进代码）
 
@@ -48,9 +51,31 @@ python lerobot_homework\week7_llm_agent\llm_agent.py --dry-run --task "检测黑
 
 # 4.2 真机
 python lerobot_homework\week7_llm_agent\llm_agent.py --task "看看机械臂状态，把末端移到 (0.2, 0, 0.3)"
+
+# 4.1 任务五：文本命令 → 连贯动作（真机，DeepSeek 文本模型解析"先挥手再点头"）
+python lerobot_homework\week7_llm_agent\sequence_pipeline.py --command "先挥手再点头"
+
+# 任务五 dry-run（不连机械臂，验证命令解析与动作序列）
+python lerobot_homework\week7_llm_agent\sequence_pipeline.py --command "挥手" --dry-run
 ```
 
 > 注：provider 按环境变量自动选择（先 ZHIPU_API_KEY，再 SILICONFLOW_API_KEY，最后 OPENAI_API_KEY），见文件头注释。
+
+## 任务四：prompt 改进说明（向助教汇报用）
+
+任务三 → 任务四在 prompt 中补充了：
+
+1. **机械臂构造说明**：明确 6 自由度对应人体动作（shoulder_pan=转肩、shoulder_lift=抬臂、elbow_flex=弯肘、wrist_flex=压腕/抬手背、wrist_roll=转手腕、gripper=五指张合），让 VLM 理解"自由度↔人体关节"的对应。
+2. **动作→关节参数示例表**：写入经真机校准的准确参数（举手=pan31/lift-100/elbow71、侧平举=pan23/lift-100/elbow6、叉腰、指点、比耶、握拳、下压扶物等），模型识别到类似动作时直接参考。
+3. **判断原则**：先判断手臂整体朝向（抬/平/垂）和手部状态（张/握/压/朝上），再逐关节映射；并强调"水平=0°、竖直=90°"避免 90° 偏移。
+
+额外保障（不在 prompt 内，但显著提升验收稳定性）：VLM 描述命中"举手/招手/挥手"或"侧平举/水平伸直"时，**直接套用真机保存的模板关节值**（raise_hand_pose.json / side_raise_pose.json），不再依赖模型猜测。
+
+## 任务五：连贯动作说明（向助教汇报用）
+
+- **命令→动作序列**：调用文本大模型（DeepSeek deepseek-chat，OpenAI 兼容）把自然语言命令（如"先挥手再点头"）解析为动作名序列 JSON；解析失败时回退关键词匹配。
+- **动作库**：8 个动作（举手/侧平举/挥手/招手/点头/敬礼/叉腰/指点），每个动作由 1~5 帧关节姿态组成，逐帧降速执行。
+- **验收演示**：`sequence_pipeline.py --command "先挥手再点头"` → 机械臂无人工干预连续完成挥手（5 帧摆动）+ 点头（5 帧腕部俯仰），两个不同姿态。也可组合任意动作（如"敬礼然后叉腰"）。
 
 ## 关节定义（VLM prompt 用）
 
