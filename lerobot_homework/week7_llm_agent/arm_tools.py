@@ -64,10 +64,12 @@ def clip_joints(joints: dict) -> dict:
 class ArmController:
     """SO-ARM101 控制/感知工具层。dry_run=True 时仿真，不连机械臂。"""
 
-    def __init__(self, port: str = "COM3", dry_run: bool = False, run_time: int = 800):
+    def __init__(self, port: str = "COM3", dry_run: bool = False, run_time: int = 800,
+                 calibrate: bool = False):
         self.port = port
         self.dry_run = dry_run
         self.run_time = run_time
+        self.calibrate = calibrate
         self.tracking = False
         self.tracking_object = None
         self.robot = None
@@ -88,7 +90,8 @@ class ArmController:
         )
         robot = SO101Follower(cfg)
         try:
-            robot.connect()
+            # calibrate=False：跳过"Press ENTER to use provided calibration file"交互（校准文件已在电机内）
+            robot.connect(calibrate=self.calibrate)
         except Exception as e:
             raise SystemExit(
                 f"[error] 机械臂连接失败: {type(e).__name__}: {str(e)[:200]}\n"
