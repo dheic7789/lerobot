@@ -20,6 +20,12 @@ lerobot_homework/
 │   ├── servo_aruco.py          # 练习3：视觉伺服（ArUco 简单版，1cm 步进）
 │   ├── make_printables.py      # 生成棋盘格/ArUco 打印图
 │   └── printables/             # 打印图（棋盘格 9×6@25mm、ArUco 4x4_250）
+├── week7_llm_agent/            # 第 7 周：LLM Agent
+│   ├── arm_tools.py            # 机械臂工具层（7 个工具 + OpenAI schema）
+│   ├── imitate_pipeline.py     # 4.1 拍照→VLM→关节→机械臂模仿
+│   ├── llm_agent.py            # 4.2 LLM Agent ReAct + function calling
+│   ├── skill_arm_tracking.md   # 选做：追踪 Skill
+│   └── README.md               # Week7 使用说明（API Key/运行方式）
 └── tools/                      # 通用工具与 SCS215 适配
     ├── scs215_arm.py           # 自研 SCS215 总线库（大端）
     ├── scs215_adapter.patch    # LeRobot 官方 Feetech 驱动适配补丁
