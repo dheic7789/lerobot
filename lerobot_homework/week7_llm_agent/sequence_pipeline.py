@@ -21,46 +21,10 @@ import time
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
-POSE_JSON = {name: json.loads((BASE_DIR / name).read_text(encoding="utf-8"))
-             for name in ("raise_hand_pose.json", "side_raise_pose.json")}
-
-
-def _frame(base_name, **overrides):
-    """基于某个基础姿态帧生成新帧（未指定的关节沿用基础姿态）。"""
-    f = dict(POSE_JSON[base_name])
-    for k, v in overrides.items():
-        f[k] = v
-    return f
-
-
-# 动作库：动作名 -> 关节帧序列（依序执行即形成一个连贯动作）
-RAISE = POSE_JSON["raise_hand_pose.json"]
-SIDE = POSE_JSON["side_raise_pose.json"]
-ACTIONS = {
-    "举手": [RAISE],
-    "侧平举": [SIDE],
-    "挥手": [_frame("raise_hand_pose.json", shoulder_pan=RAISE["shoulder_pan"] - 25),
-             _frame("raise_hand_pose.json", shoulder_pan=RAISE["shoulder_pan"] + 25),
-             _frame("raise_hand_pose.json", shoulder_pan=RAISE["shoulder_pan"] - 25),
-             _frame("raise_hand_pose.json", shoulder_pan=RAISE["shoulder_pan"] + 25),
-             RAISE],
-    "招手": [_frame("raise_hand_pose.json", gripper=80),
-             _frame("raise_hand_pose.json", gripper=35),
-             _frame("raise_hand_pose.json", gripper=80),
-             _frame("raise_hand_pose.json", gripper=35),
-             RAISE],
-    "点头": [_frame("side_raise_pose.json", wrist_flex=-30),
-             _frame("side_raise_pose.json", wrist_flex=25),
-             _frame("side_raise_pose.json", wrist_flex=-30),
-             _frame("side_raise_pose.json", wrist_flex=25),
-             SIDE],
-    "敬礼": [_frame("raise_hand_pose.json", shoulder_pan=0), RAISE],
-    "叉腰": [{"shoulder_pan": 0, "shoulder_lift": -40, "elbow_flex": 90,
-              "wrist_flex": -20, "wrist_roll": 0, "gripper": 50}],
-    "指点": [{"shoulder_pan": 0, "shoulder_lift": 20, "elbow_flex": 15,
-              "wrist_flex": 0, "wrist_roll": 0, "gripper": 30}],
-}
-FRAME_PAUSE = 0.9   # 帧间停顿（秒）
+ACTIONS_LIB = json.loads((BASE_DIR / "actions_library.json").read_text(encoding="utf-8"))
+FRAME_PAUSE = ACTIONS_LIB.get("帧间停顿秒", 0.9)
+# 动作库：动作名 -> 关节帧序列（依序执行即形成一个连贯动作）。数据在 actions_library.json，可直接编辑。
+ACTIONS = {name: entry["帧"] for name, entry in ACTIONS_LIB["动作"].items()}
 
 
 def _check_key(key: str):

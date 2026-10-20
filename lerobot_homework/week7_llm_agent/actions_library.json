@@ -1,0 +1,213 @@
+{
+  "帧间停顿秒": 0.9,
+  "动作": {
+    "举手": {
+      "说明": "手臂上举、夹爪半开（真机校准的举手姿势）",
+      "帧": [
+        {
+          "shoulder_pan": 31.15,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 71.1,
+          "wrist_flex": -2.79,
+          "wrist_roll": 1.71,
+          "gripper": 34.65
+        }
+      ]
+    },
+    "侧平举": {
+      "说明": "手臂向侧面水平伸直（真机校准的侧平举姿势）",
+      "帧": [
+        {
+          "shoulder_pan": 23.23,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 6.32,
+          "wrist_flex": -13.48,
+          "wrist_roll": 1.71,
+          "gripper": 34.76
+        }
+      ]
+    },
+    "挥手": {
+      "说明": "举手位肩部左右摆动 2 个来回",
+      "帧": [
+        {
+          "shoulder_pan": 6.149999999999999,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 71.1,
+          "wrist_flex": -2.79,
+          "wrist_roll": 1.71,
+          "gripper": 34.65
+        },
+        {
+          "shoulder_pan": 56.15,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 71.1,
+          "wrist_flex": -2.79,
+          "wrist_roll": 1.71,
+          "gripper": 34.65
+        },
+        {
+          "shoulder_pan": 6.149999999999999,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 71.1,
+          "wrist_flex": -2.79,
+          "wrist_roll": 1.71,
+          "gripper": 34.65
+        },
+        {
+          "shoulder_pan": 56.15,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 71.1,
+          "wrist_flex": -2.79,
+          "wrist_roll": 1.71,
+          "gripper": 34.65
+        },
+        {
+          "shoulder_pan": 31.15,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 71.1,
+          "wrist_flex": -2.79,
+          "wrist_roll": 1.71,
+          "gripper": 34.65
+        }
+      ]
+    },
+    "招手": {
+      "说明": "举手位夹爪张开/闭合 2 次（召唤手势）",
+      "帧": [
+        {
+          "shoulder_pan": 31.15,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 71.1,
+          "wrist_flex": -2.79,
+          "wrist_roll": 1.71,
+          "gripper": 80
+        },
+        {
+          "shoulder_pan": 31.15,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 71.1,
+          "wrist_flex": -2.79,
+          "wrist_roll": 1.71,
+          "gripper": 35
+        },
+        {
+          "shoulder_pan": 31.15,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 71.1,
+          "wrist_flex": -2.79,
+          "wrist_roll": 1.71,
+          "gripper": 80
+        },
+        {
+          "shoulder_pan": 31.15,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 71.1,
+          "wrist_flex": -2.79,
+          "wrist_roll": 1.71,
+          "gripper": 35
+        },
+        {
+          "shoulder_pan": 31.15,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 71.1,
+          "wrist_flex": -2.79,
+          "wrist_roll": 1.71,
+          "gripper": 34.65
+        }
+      ]
+    },
+    "点头": {
+      "说明": "侧平举位腕部俯仰 2 个来回",
+      "帧": [
+        {
+          "shoulder_pan": 23.23,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 6.32,
+          "wrist_flex": -30,
+          "wrist_roll": 1.71,
+          "gripper": 34.76
+        },
+        {
+          "shoulder_pan": 23.23,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 6.32,
+          "wrist_flex": 25,
+          "wrist_roll": 1.71,
+          "gripper": 34.76
+        },
+        {
+          "shoulder_pan": 23.23,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 6.32,
+          "wrist_flex": -30,
+          "wrist_roll": 1.71,
+          "gripper": 34.76
+        },
+        {
+          "shoulder_pan": 23.23,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 6.32,
+          "wrist_flex": 25,
+          "wrist_roll": 1.71,
+          "gripper": 34.76
+        },
+        {
+          "shoulder_pan": 23.23,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 6.32,
+          "wrist_flex": -13.48,
+          "wrist_roll": 1.71,
+          "gripper": 34.76
+        }
+      ]
+    },
+    "敬礼": {
+      "说明": "从举手位转正（pan 归零）再回举手位",
+      "帧": [
+        {
+          "shoulder_pan": 0,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 71.1,
+          "wrist_flex": -2.79,
+          "wrist_roll": 1.71,
+          "gripper": 34.65
+        },
+        {
+          "shoulder_pan": 31.15,
+          "shoulder_lift": -100.0,
+          "elbow_flex": 71.1,
+          "wrist_flex": -2.79,
+          "wrist_roll": 1.71,
+          "gripper": 34.65
+        }
+      ]
+    },
+    "叉腰": {
+      "说明": "肘部弯 90°、腕部下压",
+      "帧": [
+        {
+          "shoulder_pan": 0,
+          "shoulder_lift": -40,
+          "elbow_flex": 90,
+          "wrist_flex": -20,
+          "wrist_roll": 0,
+          "gripper": 50
+        }
+      ]
+    },
+    "指点": {
+      "说明": "手臂前伸、夹爪微合（指状）",
+      "帧": [
+        {
+          "shoulder_pan": 0,
+          "shoulder_lift": 20,
+          "elbow_flex": 15,
+          "wrist_flex": 0,
+          "wrist_roll": 0,
+          "gripper": 30
+        }
+      ]
+    }
+  }
+}
