@@ -26,6 +26,10 @@ lerobot_homework/
 │   ├── llm_agent.py            # 4.2 LLM Agent ReAct + function calling
 │   ├── skill_arm_tracking.md   # 选做：追踪 Skill
 │   └── README.md               # Week7 使用说明（API Key/运行方式）
+├── final_project_piano/        # 期末项目：机械臂弹钢琴
+│   ├── piano_joint.py          # 按关节位姿演奏单音、音阶和歌曲
+│   ├── teach_piano_joint.py    # 示教并保存七个白键对应的关节位姿
+│   └── config/                 # 关节范围与钢琴音键位姿
 └── tools/                      # 通用工具与 SCS215 适配
     ├── scs215_arm.py           # 自研 SCS215 总线库（大端）
     ├── scs215_adapter.patch    # LeRobot 官方 Feetech 驱动适配补丁
